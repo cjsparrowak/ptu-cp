@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- Use a data-driven curriculum module for all laboratory content so lessons and challenges stay separate from interface state.
+- Keep learner progress client-local because the experience requires no account or shared data.
