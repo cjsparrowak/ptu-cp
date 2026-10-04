@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { BookOpen, Bot, Brain, Check, ChevronLeft, ChevronRight, CircleHelp, Code2, Flame, Gamepad2, Heart, Home, Lightbulb, LockKeyhole, RotateCcw, Search, Sparkles, Star, Trophy, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -7,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import { lessons, units, viva, type Lesson } from "@/data/curriculum";
 import { CodeVisualizer } from "@/components/game/CodeVisualizer";
-import { createTutorThread } from "@/components/game/TutorCoach";
+import { createTutorThread, TutorCoach } from "@/components/game/TutorCoach";
 import crest from "@/assets/ptu-logo.png.asset.json";
 
 type View = "map" | "lesson" | "viva";
@@ -15,13 +14,13 @@ type SavedProgress = { completed: number[]; xp: number; streak: number };
 const defaultProgress: SavedProgress = { completed: [], xp: 0, streak: 1 };
 
 export function CQuestApp() {
-  const navigate = useNavigate();
   const [view, setView] = useState<View>("map");
   const [activeId, setActiveId] = useState(1);
   const [filter, setFilter] = useState<(typeof units)[number]>("All");
   const [search, setSearch] = useState("");
   const [progress, setProgress] = useState<SavedProgress>(defaultProgress);
   const [hydrated, setHydrated] = useState(false);
+  const [coachThreadId, setCoachThreadId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -39,7 +38,7 @@ export function CQuestApp() {
   const completeLesson = (id: number) => setProgress((p) => p.completed.includes(id) ? p : { ...p, completed: [...p.completed, id], xp: p.xp + 100, streak: p.streak + 1 });
   const openCoach = (context = "General C programming doubts for PTU CSUC102.", title = "New C doubt") => {
     const threadId = createTutorThread(context, title);
-    void navigate({ to: "/coach/$threadId", params: { threadId } });
+    setCoachThreadId(threadId);
   };
   const lesson = lessons.find((item) => item.id === activeId) ?? lessons[0];
 
@@ -53,6 +52,7 @@ export function CQuestApp() {
         {view === "lesson" && <LessonPlayer lesson={lesson} completed={progress.completed.includes(lesson.id)} onBack={() => setView("map")} onComplete={() => completeLesson(lesson.id)} onNext={() => lesson.id < lessons.length ? openLesson(lesson.id + 1) : setView("map")} onCoach={(line) => openCoach(`Mission ${lesson.id}: ${lesson.title}\nAim: ${lesson.aim}\nSelected line ${line + 1}: ${lesson.code[line]}\nLine meaning: ${lesson.explanations[line]}\nFull program:\n${lesson.code.join("\n")}`, `${lesson.shortTitle} · line ${line + 1}`)} />}
         {view === "viva" && <VivaArena onBack={() => setView("map")} />}
         <MobileNav view={view} onHome={() => setView("map")} onViva={() => setView("viva")} onCoach={() => openCoach()} />
+        {coachThreadId ? <TutorCoach threadId={coachThreadId} mode="widget" onClose={() => setCoachThreadId(null)} /> : <Button className="fixed bottom-20 right-4 z-50 size-14 rounded-full shadow-2xl md:bottom-6 md:right-6" size="icon" onClick={() => openCoach()} aria-label="Open doubt coach"><Bot className="size-6" /></Button>}
       </div>
     </TooltipProvider>
   );
