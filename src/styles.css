@@ -218,6 +218,12 @@
 .memory-red.is-active { border-color: var(--danger); box-shadow: inset 3px 0 var(--danger); }
 .memory-green.is-active { border-color: var(--success); box-shadow: inset 3px 0 var(--success); }
 
+.execution-stage { box-shadow: 0 18px 42px color-mix(in oklab, var(--background) 62%, transparent); }
+.flow-node svg { width: 1.1rem; height: 1.1rem; }
+.flow-node.is-active { box-shadow: 0 0 24px color-mix(in oklab, var(--primary) 28%, transparent); }
+.memory-cube { transform: rotateX(5deg) rotateY(-7deg); transform-style: preserve-3d; }
+.memory-cube.is-active { transform: rotateX(0deg) rotateY(0deg) translateY(-6px); box-shadow: 0 15px 34px color-mix(in oklab, var(--reward) 22%, transparent); }
+
 @media (prefers-reduced-motion: no-preference) {
-  .mission-card, .memory-row { transition: transform 180ms ease, border-color 180ms ease; }
+  .mission-card, .memory-row, .flow-node, .memory-cube { transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
 }
