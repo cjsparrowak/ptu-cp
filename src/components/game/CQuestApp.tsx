@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Brain, Check, ChevronLeft, ChevronRight, CircleHelp, Code2, Flame, Gamepad2, Heart, Home, Lightbulb, LockKeyhole, RotateCcw, Search, Sparkles, Star, Trophy, X, Zap } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { BookOpen, Bot, Brain, Check, ChevronLeft, ChevronRight, CircleHelp, Code2, Flame, Gamepad2, Heart, Home, Lightbulb, LockKeyhole, RotateCcw, Search, Sparkles, Star, Trophy, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { lessons, units, viva, type Lesson } from "@/data/curriculum";
-import crest from "@/assets/ptu-crest.png.asset.json";
+import { CodeVisualizer } from "@/components/game/CodeVisualizer";
+import { createTutorThread } from "@/components/game/TutorCoach";
+import crest from "@/assets/ptu-logo.png.asset.json";
 
 type View = "map" | "lesson" | "viva";
 type SavedProgress = { completed: number[]; xp: number; streak: number };
 const defaultProgress: SavedProgress = { completed: [], xp: 0, streak: 1 };
 
 export function CQuestApp() {
+  const navigate = useNavigate();
   const [view, setView] = useState<View>("map");
   const [activeId, setActiveId] = useState(1);
   const [filter, setFilter] = useState<(typeof units)[number]>("All");
@@ -33,6 +37,10 @@ export function CQuestApp() {
 
   const openLesson = (id: number) => { setActiveId(id); setView("lesson"); window.scrollTo(0, 0); };
   const completeLesson = (id: number) => setProgress((p) => p.completed.includes(id) ? p : { ...p, completed: [...p.completed, id], xp: p.xp + 100, streak: p.streak + 1 });
+  const openCoach = (context = "General C programming doubts for PTU CSUC102.", title = "New C doubt") => {
+    const threadId = createTutorThread(context, title);
+    void navigate({ to: "/coach/$threadId", params: { threadId } });
+  };
   const lesson = lessons.find((item) => item.id === activeId) ?? lessons[0];
 
   if (!lesson) return null;
@@ -40,17 +48,17 @@ export function CQuestApp() {
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background text-foreground">
-        <TopBar progress={progress} view={view} onHome={() => setView("map")} onViva={() => setView("viva")} />
+        <TopBar progress={progress} view={view} onHome={() => setView("map")} onViva={() => setView("viva")} onCoach={() => openCoach()} />
         {view === "map" && <QuestMap progress={progress} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} onOpen={openLesson} />}
-        {view === "lesson" && <LessonPlayer lesson={lesson} completed={progress.completed.includes(lesson.id)} onBack={() => setView("map")} onComplete={() => completeLesson(lesson.id)} onNext={() => lesson.id < lessons.length ? openLesson(lesson.id + 1) : setView("map")} />}
+        {view === "lesson" && <LessonPlayer lesson={lesson} completed={progress.completed.includes(lesson.id)} onBack={() => setView("map")} onComplete={() => completeLesson(lesson.id)} onNext={() => lesson.id < lessons.length ? openLesson(lesson.id + 1) : setView("map")} onCoach={(line) => openCoach(`Mission ${lesson.id}: ${lesson.title}\nAim: ${lesson.aim}\nSelected line ${line + 1}: ${lesson.code[line]}\nLine meaning: ${lesson.explanations[line]}\nFull program:\n${lesson.code.join("\n")}`, `${lesson.shortTitle} · line ${line + 1}`)} />}
         {view === "viva" && <VivaArena onBack={() => setView("map")} />}
-        <MobileNav view={view} onHome={() => setView("map")} onViva={() => setView("viva")} />
+        <MobileNav view={view} onHome={() => setView("map")} onViva={() => setView("viva")} onCoach={() => openCoach()} />
       </div>
     </TooltipProvider>
   );
 }
 
-function TopBar({ progress, view, onHome, onViva }: { progress: SavedProgress; view: View; onHome: () => void; onViva: () => void }) {
+function TopBar({ progress, view, onHome, onViva, onCoach }: { progress: SavedProgress; view: View; onHome: () => void; onViva: () => void; onCoach: () => void }) {
   return <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-xl">
     <div className="mx-auto flex h-16 max-w-[1500px] items-center gap-3 px-4 sm:px-6 lg:px-8">
       <button onClick={onHome} className="flex min-w-0 items-center gap-3 text-left" aria-label="Open quest map">
@@ -60,6 +68,7 @@ function TopBar({ progress, view, onHome, onViva }: { progress: SavedProgress; v
       <div className="ml-auto hidden items-center gap-1 md:flex">
         <Button variant={view === "map" ? "secondary" : "ghost"} size="sm" onClick={onHome}><Home /> Quest map</Button>
         <Button variant={view === "viva" ? "secondary" : "ghost"} size="sm" onClick={onViva}><Brain /> Viva arena</Button>
+        <Button variant="ghost" size="sm" onClick={onCoach}><Bot /> Doubt coach</Button>
       </div>
       <div className="ml-auto flex items-center gap-2 md:ml-3">
         <Stat icon={<Flame />} value={String(progress.streak)} label="day streak" tone="warm" />
@@ -111,16 +120,16 @@ function QuestMap({ progress, filter, setFilter, search, setSearch, onOpen }: { 
   </main>;
 }
 
-function LessonPlayer({ lesson, completed, onBack, onComplete, onNext }: { lesson: Lesson; completed: boolean; onBack: () => void; onComplete: () => void; onNext: () => void }) {
+function LessonPlayer({ lesson, completed, onBack, onComplete, onNext, onCoach }: { lesson: Lesson; completed: boolean; onBack: () => void; onComplete: () => void; onNext: () => void; onCoach: (line: number) => void }) {
   const [line, setLine] = useState(0); const [phase, setPhase] = useState<"learn"|"challenge"|"result">("learn"); const [selected, setSelected] = useState<string | null>(null);
   useEffect(()=>{ setLine(0); setPhase("learn"); setSelected(null); },[lesson.id]);
   const correct=selected===lesson.output;
   const answer=(option:string)=>{ if(selected) return; setSelected(option); setPhase("result"); if(option===lesson.output) onComplete(); };
   return <main className="mx-auto max-w-[1500px] px-4 pb-28 pt-5 sm:px-6 lg:px-8">
     <div className="mb-5 flex items-center gap-3"><Button variant="ghost" size="icon" onClick={onBack} aria-label="Back to quest map"><ChevronLeft/></Button><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-3 text-[11px] font-bold uppercase text-muted-foreground"><span className="truncate">Mission {lesson.id} · {lesson.unit}</span><span>{phase==="learn" ? `${line+1}/${lesson.code.length}` : "Final challenge"}</span></div><Progress value={phase==="learn" ? ((line+1)/lesson.code.length)*78 : 100} className="mt-2"/></div></div>
-    <div className="mb-6"><div className="flex flex-wrap items-center gap-2"><span className="rounded-md bg-primary/15 px-2 py-1 text-xs font-bold text-primary">{lesson.difficulty}</span><span className="text-xs text-muted-foreground">{lesson.minutes} min · 100 XP</span>{completed&&<span className="flex items-center gap-1 text-xs font-bold text-success"><Check className="size-3.5"/>Cleared</span>}</div><h1 className="mt-3 font-display text-3xl font-bold sm:text-4xl">{lesson.shortTitle}</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{lesson.aim}</p></div>
+    <div className="mb-6"><div className="flex flex-wrap items-center gap-2"><span className="rounded-md bg-primary/15 px-2 py-1 text-xs font-bold text-primary">{lesson.difficulty}</span><span className="text-xs text-muted-foreground">{lesson.minutes} min · 100 XP</span>{completed&&<span className="flex items-center gap-1 text-xs font-bold text-success"><Check className="size-3.5"/>Cleared</span>}<Button variant="outline" size="sm" className="ml-auto" onClick={() => onCoach(line)}><Bot/>Ask about line {line + 1}</Button></div><h1 className="mt-3 font-display text-3xl font-bold sm:text-4xl">{lesson.shortTitle}</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{lesson.aim}</p></div>
     {phase==="learn" ? <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(340px,.8fr)]">
-      <section className="overflow-hidden rounded-lg border border-border bg-code"><div className="flex items-center justify-between border-b border-code-border px-4 py-3"><span className="flex items-center gap-2 font-mono text-xs text-code-muted"><Code2 className="size-4"/> mission_{lesson.id}.c</span><span className="text-[10px] uppercase text-code-muted">tap any line</span></div><div className="overflow-x-auto py-3 font-mono text-[13px] leading-7 sm:text-sm">{lesson.code.map((code,i)=><button key={`${code}-${i}`} onClick={()=>setLine(i)} className={cn("code-line flex w-full min-w-max items-center border-l-2 pr-8 text-left",i===line?"border-primary bg-primary/12":"border-transparent hover:bg-code-hover")}><span className="w-11 shrink-0 select-none pr-3 text-right text-code-muted">{i+1}</span><span className={i===line?"text-code-active":"text-code-text"}>{code}</span>{i===line&&<span className="ml-5 inline-flex items-center gap-1 rounded bg-primary/20 px-1.5 text-[10px] font-sans font-bold text-primary"><Zap className="size-3"/>NOW</span>}</button>)}</div></section>
+      <div className="space-y-5"><section className="overflow-hidden rounded-lg border border-border bg-code"><div className="flex items-center justify-between border-b border-code-border px-4 py-3"><span className="flex items-center gap-2 font-mono text-xs text-code-muted"><Code2 className="size-4"/> mission_{lesson.id}.c</span><span className="text-[10px] uppercase text-code-muted">tap any line</span></div><div className="overflow-x-auto py-3 font-mono text-[13px] leading-7 sm:text-sm">{lesson.code.map((code,i)=><button key={`${code}-${i}`} onClick={()=>setLine(i)} className={cn("code-line flex w-full min-w-max items-center border-l-2 pr-8 text-left",i===line?"border-primary bg-primary/12":"border-transparent hover:bg-code-hover")}><span className="w-11 shrink-0 select-none pr-3 text-right text-code-muted">{i+1}</span><span className={i===line?"text-code-active":"text-code-text"}>{code}</span>{i===line&&<span className="ml-5 inline-flex items-center gap-1 rounded bg-primary/20 px-1.5 text-[10px] font-sans font-bold text-primary"><Zap className="size-3"/>NOW</span>}</button>)}</div></section><CodeVisualizer lesson={lesson} line={line}/></div>
       <aside className="space-y-4"><div className="rounded-lg border border-primary/30 bg-primary/8 p-5"><div className="flex items-center gap-2 text-xs font-bold uppercase text-primary"><Lightbulb className="size-4"/> Line {line+1} decoded</div><p className="mt-3 text-base font-semibold leading-6">{lesson.explanations[line]}</p><p className="mt-3 text-xs leading-5 text-muted-foreground">Follow the active highlight. The program has reached this exact instruction.</p></div>
         <div className="rounded-lg border border-border bg-surface p-5"><div className="flex items-center justify-between"><h2 className="font-display font-bold">Memory snapshot</h2><span className="live-dot text-[10px] font-bold uppercase text-success">Live</span></div><div className="mt-4 grid gap-2">{lesson.memory.map((m,i)=><div key={m.label} className={cn("memory-row flex items-center justify-between rounded-md border p-3",`memory-${m.tone}`,i===line%lesson.memory.length&&"is-active")}><span className="font-mono text-xs text-muted-foreground">{m.label}</span><span className="font-mono text-sm font-bold">{m.value}</span></div>)}</div></div>
         <div className="rounded-lg border border-border bg-terminal p-4 font-mono"><div className="mb-3 flex gap-1.5"><span className="size-2 rounded-full bg-danger"/><span className="size-2 rounded-full bg-reward"/><span className="size-2 rounded-full bg-success"/></div><p className="text-[11px] text-terminal-muted">$ gcc mission_{lesson.id}.c && ./a.out</p><p className="mt-2 text-sm text-terminal-text">{line===lesson.code.length-1 ? lesson.output : <span className="animate-pulse">▌</span>}</p></div>
@@ -136,4 +145,4 @@ function Challenge({lesson,selected,correct,onAnswer,onRetry,onNext}:{lesson:Les
 
 function VivaArena({onBack}:{onBack:()=>void}) { const [index,setIndex]=useState(0); const [revealed,setRevealed]=useState(false); const qa=viva[index]; if (!qa) return null; return <main className="mx-auto flex max-w-4xl flex-col px-4 pb-28 pt-8 sm:px-6"><Button variant="ghost" className="self-start" onClick={onBack}><ChevronLeft/>Quest map</Button><div className="mt-8 text-center"><span className="mx-auto grid size-14 place-items-center rounded-lg bg-accent text-accent-foreground"><Brain/></span><p className="mt-5 text-xs font-bold uppercase text-primary">Rapid recall</p><h1 className="mt-2 font-display text-4xl font-bold">Viva Arena</h1><p className="mt-3 text-muted-foreground">Eight essential questions adapted from your lab manual.</p></div><div className="mt-8 min-h-72 rounded-lg border border-border bg-surface p-6 sm:p-10"><div className="flex justify-between text-xs text-muted-foreground"><span>Question {index+1} of {viva.length}</span><span>Tap to reveal</span></div><h2 className="mt-8 font-display text-2xl font-bold leading-snug">{qa[0]}</h2>{revealed?<div className="mt-8 border-l-2 border-success pl-5"><p className="text-xs font-bold uppercase text-success">Answer</p><p className="mt-2 text-lg leading-7">{qa[1]}</p></div>:<Button className="mt-10" onClick={()=>setRevealed(true)}><Lightbulb/>Reveal answer</Button>}</div><div className="mt-4 flex justify-between"><Button variant="outline" disabled={index===0} onClick={()=>{setIndex(index-1);setRevealed(false)}}><ChevronLeft/>Previous</Button><Button disabled={index===viva.length-1} onClick={()=>{setIndex(index+1);setRevealed(false)}}>Next<ChevronRight/></Button></div></main> }
 
-function MobileNav({view,onHome,onViva}:{view:View;onHome:()=>void;onViva:()=>void}) { return <nav className="fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-2 border-t border-border bg-background/95 backdrop-blur md:hidden"><Button variant="ghost" className={cn("h-full rounded-none flex-col gap-1 text-[10px]",view==="map"&&"text-primary")} onClick={onHome}><Home/>Missions</Button><Button variant="ghost" className={cn("h-full rounded-none flex-col gap-1 text-[10px]",view==="viva"&&"text-primary")} onClick={onViva}><Brain/>Viva</Button></nav> }
+function MobileNav({view,onHome,onViva,onCoach}:{view:View;onHome:()=>void;onViva:()=>void;onCoach:()=>void}) { return <nav className="fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-3 border-t border-border bg-background/95 backdrop-blur md:hidden"><Button variant="ghost" className={cn("h-full rounded-none flex-col gap-1 text-[10px]",view==="map"&&"text-primary")} onClick={onHome}><Home/>Missions</Button><Button variant="ghost" className={cn("h-full rounded-none flex-col gap-1 text-[10px]",view==="viva"&&"text-primary")} onClick={onViva}><Brain/>Viva</Button><Button variant="ghost" className="h-full rounded-none flex-col gap-1 text-[10px]" onClick={onCoach}><Bot/>Ask coach</Button></nav> }
