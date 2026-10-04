@@ -10,4 +10,4 @@
 - [x] Add animated line-by-line execution diagrams to every lesson
 - [x] Add browser-saved threaded doubt coaching with lesson context
 - [x] Verify lesson visuals and tutor threads on desktop and mobile
-- [ ] Convert the doubt coach into a floating in-game widget
+- [x] Convert the doubt coach into a floating in-game widget
