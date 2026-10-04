@@ -11,4 +11,5 @@
 - [x] Add browser-saved threaded doubt coaching with lesson context
 - [x] Verify lesson visuals and tutor threads on desktop and mobile
 - [x] Convert the doubt coach into a floating in-game widget
-- [ ] Expand Viva Arena to 30 questions and hide the Lovable badge
+- [x] Expand Viva Arena to 30 questions
+- [ ] Hide the Lovable badge — blocked until the workspace has Pro editor access
