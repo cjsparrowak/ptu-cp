@@ -6,3 +6,7 @@
 - [x] Add challenge modes, XP, lives, streaks, and saved progress
 - [x] Apply the PTU-inspired design system and responsive experience
 - [x] Add page metadata and verify the main learning flow
+- [ ] Replace the extracted crest with the uploaded official PTU logo and favicon
+- [ ] Add animated line-by-line execution diagrams to every lesson
+- [ ] Add browser-saved threaded doubt coaching with lesson context
+- [ ] Verify lesson visuals and tutor threads on desktop and mobile

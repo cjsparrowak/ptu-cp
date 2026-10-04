@@ -57,3 +57,24 @@ export const viva = [
 ] as const;
 
 export const units = ["All", "Foundations", "Logic", "Data", "Memory", "Records", "Functions"] as const;
+
+export type LineVisual = {
+  stage: "prepare" | "execute" | "memory" | "decision" | "output" | "finish";
+  action: string;
+  purpose: string;
+  effect: string;
+};
+
+export function explainLineVisually(lesson: Lesson, lineIndex: number): LineVisual {
+  const code = lesson.code[lineIndex]?.trim() ?? "";
+  const explanation = lesson.explanations[lineIndex] ?? "This instruction advances the program.";
+  if (code.startsWith("#include")) return { stage: "prepare", action: "Attach a tool library", purpose: "The compiler must know the declarations used later.", effect: "Standard input and output tools become available." };
+  if (/^(int|float|char|long|struct|union)\b/.test(code)) return { stage: "memory", action: "Create named storage", purpose: "The program needs a typed place to keep a value.", effect: explanation };
+  if (/^(if|else if|else|switch|case|for|while)\b/.test(code)) return { stage: "decision", action: code.startsWith("for") || code.startsWith("while") ? "Control repetition" : "Choose an execution path", purpose: "Control flow decides which instruction runs next.", effect: explanation };
+  if (code.includes("printf")) return { stage: "output", action: "Send a value to the screen", purpose: "This makes the program's result visible to the learner.", effect: explanation };
+  if (code.includes("scanf")) return { stage: "execute", action: "Read learner input", purpose: "The program needs data before it can calculate.", effect: explanation };
+  if (code.startsWith("return")) return { stage: "finish", action: "Return control to the system", purpose: "The program reports that execution is complete.", effect: explanation };
+  if (code === "}" || code.endsWith("};")) return { stage: "finish", action: "Close this code block", purpose: "Braces define where a function, loop, decision, or record ends.", effect: explanation };
+  if (code.includes("=") || code.includes("++") || code.includes("--")) return { stage: "memory", action: "Calculate, then store", purpose: "The right side is evaluated before the result moves into the left side.", effect: explanation };
+  return { stage: "execute", action: "Execute this instruction", purpose: "The processor follows this statement in sequence.", effect: explanation };
+}

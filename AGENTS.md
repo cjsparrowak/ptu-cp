@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 - Use a data-driven curriculum module for all laboratory content so lessons and challenges stay separate from interface state.
 - Keep learner progress client-local because the experience requires no account or shared data.
+- Store tutor threads and messages in browser localStorage; only the AI response request runs server-side so learners need no account.
