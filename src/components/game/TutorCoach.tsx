@@ -2,7 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { BookOpen, Bot, ChevronLeft, MessageSquarePlus, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Bot, ChevronLeft, Plus, Trash2, X } from "lucide-react";
 import { Conversation, ConversationContent, ConversationEmptyState, ConversationScrollButton } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea } from "@/components/ai-elements/prompt-input";
@@ -26,7 +26,7 @@ export function createTutorThread(lessonContext: string, title: string) {
   return id;
 }
 
-export function TutorCoach({ threadId }: { threadId: string }) {
+export function TutorCoach({ threadId, mode = "page", onClose }: { threadId: string; mode?: "page" | "widget"; onClose?: () => void }) {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [threads, setThreads] = useState<TutorThread[]>([]);
@@ -72,6 +72,23 @@ export function TutorCoach({ threadId }: { threadId: string }) {
     } else setThreads(remaining);
   };
   const busy = status === "submitted" || status === "streaming";
+
+  if (mode === "widget") return <aside aria-label="Doubt coach" className="fixed inset-x-3 bottom-20 z-50 flex h-[min(650px,calc(100dvh-6rem))] flex-col overflow-hidden rounded-lg border border-border bg-background shadow-2xl sm:left-auto sm:right-5 sm:w-[430px] md:bottom-6">
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-3">
+      <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary/15 text-primary"><Bot className="size-5" /></span>
+      <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{current?.title ?? "C Quest Coach"}</p><p className="truncate text-[10px] text-muted-foreground">Lesson-aware programming help</p></div>
+      <Button variant="ghost" size="icon-sm" onClick={newThread} aria-label="Start a new doubt"><Plus /></Button>
+      <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close doubt coach"><X /></Button>
+    </header>
+    <Conversation className="min-h-0 flex-1"><ConversationContent className="px-4 py-5">
+      {messages.length === 0 ? <ConversationEmptyState icon={<div className="grid size-14 place-items-center rounded-lg bg-primary/15"><BookOpen className="size-7 text-primary"/></div>} title="Ask any C programming doubt" description="Ask why a line runs, what changes in memory, or request a simple example."/> : messages.map((message) => <Message from={message.role} key={message.id}><MessageContent>{message.parts.map((part, index) => part.type === "text" ? <MessageResponse key={index}>{part.text}</MessageResponse> : null)}</MessageContent></Message>)}
+      {status === "submitted" && <Shimmer className="text-sm">Tracing the program...</Shimmer>}
+      {error && <p role="alert" className="rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{error.message}</p>}
+    </ConversationContent><ConversationScrollButton/></Conversation>
+    <div className="shrink-0 border-t border-border bg-background p-3"><PromptInput onSubmit={({ text }) => { const value = text.trim(); if (!value || busy) return; void sendMessage({ text: value }); }}>
+      <PromptInputTextarea ref={inputRef} placeholder="Ask your doubt..." disabled={busy} className="min-h-20"/><PromptInputFooter className="justify-end"><PromptInputSubmit status={status} onStop={stop} disabled={!loaded}/></PromptInputFooter>
+    </PromptInput><p className="mt-1.5 text-center text-[9px] text-muted-foreground">Verify important answers with your lab manual.</p></div>
+  </aside>;
 
   return <main className="grid min-h-screen bg-background text-foreground md:grid-cols-[280px_1fr]">
     <aside className="border-b border-border bg-surface md:border-b-0 md:border-r">
