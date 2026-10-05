@@ -8,6 +8,7 @@ import { Message, MessageContent, MessageResponse } from "@/components/ai-elemen
 import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/game/ThemeToggle";
 import logo from "@/assets/ptu-logo.png.asset.json";
 
 export type TutorThread = { id: string; title: string; updatedAt: number; lessonContext: string; messages: UIMessage[] };
@@ -73,10 +74,11 @@ export function TutorCoach({ threadId, mode = "page", onClose }: { threadId: str
   };
   const busy = status === "submitted" || status === "streaming";
 
-  if (mode === "widget") return <aside aria-label="Doubt coach" className="fixed inset-x-3 bottom-20 z-50 flex h-[min(650px,calc(100dvh-6rem))] flex-col overflow-hidden rounded-lg border border-border bg-background shadow-2xl sm:left-auto sm:right-5 sm:w-[430px] md:bottom-6">
+  if (mode === "widget") return <aside aria-label="Doubt coach" className="coach-panel fixed inset-x-3 bottom-20 z-50 flex h-[min(650px,calc(100dvh-6rem))] flex-col overflow-hidden rounded-lg border border-border bg-background sm:left-auto sm:right-5 sm:w-[430px] md:bottom-20">
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-3">
       <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary/15 text-primary"><Bot className="size-5" /></span>
       <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{current?.title ?? "C Quest Coach"}</p><p className="truncate text-[10px] text-muted-foreground">Lesson-aware programming help</p></div>
+      <ThemeToggle />
       <Button variant="ghost" size="icon-sm" onClick={newThread} aria-label="Start a new doubt"><Plus /></Button>
       <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close doubt coach"><X /></Button>
     </header>
@@ -102,7 +104,7 @@ export function TutorCoach({ threadId, mode = "page", onClose }: { threadId: str
       </div>
     </aside>
     <section className="flex min-h-[calc(100vh-132px)] flex-col md:h-screen md:min-h-0">
-      <header className="flex h-16 items-center justify-between border-b border-border px-4 sm:px-6"><div className="min-w-0"><p className="truncate font-display text-sm font-bold">{current?.title ?? "New C doubt"}</p><p className="truncate text-[10px] text-muted-foreground">Answers use your current lesson as context</p></div><Bot className="size-6 text-primary"/></header>
+      <header className="grid h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 sm:px-6"><div className="min-w-0"><p className="truncate font-display text-sm font-bold">{current?.title ?? "New C doubt"}</p><p className="truncate text-[10px] text-muted-foreground">Answers use your current lesson as context</p></div><div className="flex shrink-0 items-center gap-1"><ThemeToggle/><Bot className="size-6 text-primary"/></div></header>
       <Conversation className="min-h-0"><ConversationContent className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
         {messages.length === 0 ? <ConversationEmptyState icon={<div className="grid size-16 place-items-center rounded-lg bg-primary/15"><BookOpen className="size-8 text-primary"/></div>} title="Ask any C programming doubt" description="Try: Why does this line run now? What changed in memory? Show me with an example."/> : messages.map((message) => <Message from={message.role} key={message.id}><MessageContent>{message.parts.map((part, index) => part.type === "text" ? <MessageResponse key={index}>{part.text}</MessageResponse> : null)}</MessageContent></Message>)}
         {status === "submitted" && <Shimmer className="text-sm">Tracing the program...</Shimmer>}
