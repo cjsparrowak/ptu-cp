@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { lessons, units, viva, type Lesson } from "@/data/curriculum";
 import { CodeVisualizer } from "@/components/game/CodeVisualizer";
 import { createTutorThread, TutorCoach } from "@/components/game/TutorCoach";
+import { ThemeToggle } from "@/components/game/ThemeToggle";
 import crest from "@/assets/ptu-logo.png.asset.json";
 
 type View = "map" | "lesson" | "viva";
@@ -52,7 +53,7 @@ export function CQuestApp() {
         {view === "lesson" && <LessonPlayer lesson={lesson} completed={progress.completed.includes(lesson.id)} onBack={() => setView("map")} onComplete={() => completeLesson(lesson.id)} onNext={() => lesson.id < lessons.length ? openLesson(lesson.id + 1) : setView("map")} onCoach={(line) => openCoach(`Mission ${lesson.id}: ${lesson.title}\nAim: ${lesson.aim}\nSelected line ${line + 1}: ${lesson.code[line]}\nLine meaning: ${lesson.explanations[line]}\nFull program:\n${lesson.code.join("\n")}`, `${lesson.shortTitle} · line ${line + 1}`)} />}
         {view === "viva" && <VivaArena onBack={() => setView("map")} />}
         <MobileNav view={view} onHome={() => setView("map")} onViva={() => setView("viva")} onCoach={() => openCoach()} />
-        {coachThreadId ? <TutorCoach threadId={coachThreadId} mode="widget" onClose={() => setCoachThreadId(null)} /> : <Button className="fixed bottom-20 right-4 z-50 size-14 rounded-full shadow-2xl md:bottom-6 md:right-6" size="icon" onClick={() => openCoach()} aria-label="Open doubt coach"><Bot className="size-6" /></Button>}
+        {coachThreadId ? <TutorCoach threadId={coachThreadId} mode="widget" onClose={() => setCoachThreadId(null)} /> : <Button className="coach-launcher fixed bottom-20 right-4 z-50 size-14 rounded-full md:bottom-20 md:right-6" size="icon" onClick={() => openCoach()} aria-label="Open doubt coach" title="Open doubt coach"><Bot className="size-6" /><span className="sr-only">Open doubt coach</span></Button>}
       </div>
     </TooltipProvider>
   );
@@ -74,6 +75,7 @@ function TopBar({ progress, view, onHome, onViva, onCoach }: { progress: SavedPr
         <Stat icon={<Flame />} value={String(progress.streak)} label="day streak" tone="warm" />
         <Stat icon={<Zap />} value={String(progress.xp)} label="total XP" tone="blue" />
         <Stat icon={<Heart />} value="5" label="lives" tone="red" compact />
+        <ThemeToggle />
       </div>
     </div>
   </header>;
