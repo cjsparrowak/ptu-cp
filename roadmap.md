@@ -12,4 +12,8 @@
 - [x] Verify lesson visuals and tutor threads on desktop and mobile
 - [x] Convert the doubt coach into a floating in-game widget
 - [x] Expand Viva Arena to 30 questions
+- [ ] Audit and correct all displayed C lesson programs
+- [ ] Fix the floating coach position and strengthen its shadow and hover feedback
+- [ ] Add a persistent light and dark theme switch across the game and coach
+- [ ] Verify program content, desktop/mobile layout, and both themes
 - [ ] Hide the Lovable badge — blocked until the workspace has Pro editor access
